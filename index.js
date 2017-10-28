@@ -24,20 +24,19 @@ client.connect(function(err, result){
 
 
 
+
 app.get('/', function(req, res){
     res.json({"mensagem":"Bem vindo à API!"});
 });
 
 
-
+//falta apenas verificacao se login e senha estao preenchidos e criptografia de senha 
 app.post('/api/register', function(req, res){
     try {
       var login = req.body.login;
       var senha = req.body.password;
       var params = [login,senha];
-      var usuario = {login,senha};
-
-      
+      var usuario = {login,senha};   
 
       var query = "INSERT INTO trab_spd.users(user_login,user_pass) VALUES (?,?)";
         //inserir no banco e retornar 201 se OK   
@@ -47,7 +46,7 @@ app.post('/api/register', function(req, res){
       });  
 
     } catch (err) {
-        res.status(400).json({"mensagem":"não foi possível criar o usuário"});
+        res.status(400).json({"status":"400","mensagem":"não foi possível criar o usuário"});
     }
 });
 
@@ -56,39 +55,149 @@ app.post('/api/register', function(req, res){
 
 app.post('/api/login', function(req, res){
 //criar index para password no cassa
-    var userLogin = req.body.login;
-    var userPass = req.body.password;
-    var params = [userLogin,userPass]; 
-
+   
     try {
+        var login = req.body.login;
+        var senha = req.body.password;
         
-    } catch (error) {
-        
+        var query = "SELECT * FROM trab_spd.users WHERE user_login = ? LIMIT 1";
+
+        client.execute(query,[login],function(err,result){
+            var user = result.rows[0];
+
+            //verficar se senha enviada bate com cadastro
+            if(!user){
+                res.status(401).json({"status":"401","mensagem":"usuário não encontrado"});
+            }else if(user.user_login !== login){
+                res.status(401).json({"status":"401","mensagem":"login do usuário inválido"}); //nao precisa desse if
+            } else if(user.user_pass !== senha){
+                res.status(401).json({"status":"401","mensagem":"senha do usuário inválida"}); 
+            }else{
+                //usario e senha estiverem OK, criar token
+                                    
+                //payload e secret key; no payload botar apenas login, q nao eh informacao sensivel
+                var tokenJwt = jwt.sign(user.user_login,'secretKey');   
+
+                res.status(200).json({
+                    status:"200",
+                    mensagem:"autenticado com sucesso!",
+                    usuario:user.user_login,
+                    token:tokenJwt
+                });
+            
+            }
+
+        });
+
+             
+    } catch (err) {
+        res.status(401).json({"status":"401","mensagem":"credenciais inválidas"});
     }
 
 });
 
-//pegaR contato especifio
-app.get('/api/contacts/:cont_name', function(req,res){
+
+//middleware para autenticar outras rotas; toda vez q uma requisicao for feita esse middleware será chamado para ver
+//se pessoa tem um token valido de acesso; o middleware so vai filtrar as rotas q estao abaixo dele aqui no código
+//rotas '/', '/api/register' e '/api/login' não estarão dentro do middle
+app.use(function(req,res,next){
+    //token vai receber o token de autenticacao enviado pelo cli, esse token pode ser enviado pelo cli
+    //de varias formas, como no body da requisicao, na querystring da url ou no header
+    var token = req.body.token || req.query.token || req.headers['x-acess-token'];
+
+    if(token){
+        //verifica se token está correto
+        jwt.verify(token,'secretKey',function(err, decoded){
+            if(err){
+                return res.json({
+                    status:"400",
+                    mensagem:"falha ao autenticar token"
+                });
+            }else{
+                //se token estiver OK, a requisicao é válida e o middleware manda para a prox requisicao da lista
+                req.decoded = decoded;
+                next();
+            }
+        });
+
+
+    } else{
+        return res.status(403).json({
+            status:"403",
+            mensagem:"token de acesso não informado"
+        });
+    }
+
+
+});
+
+//novo contato
+app.post('/api/contacts',function(req,res){
     
-    var q = "SELECT * FROM trab_spd.contatos WHERE nome = ?";
-   
-    client.execute(q,[req.params.nome], function(err, result){
-        if(err){
-            res.status(401).send({"msdg":"erro"});
-        }
+       try {
+       //recuperando token de acesso(se conseguiu chegar nessa rota, ja passou pelo middleware de autenticacao,
+       //entao token existe e está válido)
+        var token = req.body.token || req.query.token || req.headers['x-acess-token'];        
+        //pegando o payload do token, q conterá o useR_login
+        var payload = jwt.verify(token,'secretKey');
 
-      
-        try {
-            var user = result.rows[0]; 
-            res.json({"nome":user.nome,"tel":user.tel,"num":user.num}); 
-        } catch (error) {
-            res.status(401).json({"msg":"erro"});
-        }       
-        
+        var nomeContato = req.body.nome_contato;
+        var telContato = req.body.tel_contato;
+
+        var query = "INSERT INTO trab_spd.contacts(user_login,cont_name,cont_tel) VALUES(?,?,?)";
        
+        var params = [payload,nomeContato,telContato];
+      
+        client.execute(query,params,{prepare:true}, function(err, result){
+          
+            //fazer verificações de campos vazios
+            res.status(201).json({
+                status:"201",
+                mensagem:"contato criado com sucesso!",
+                usuario:payload,
+                contato:nomeContato,
+                telefone:telContato
 
-    });
+            });
+    
+        });
+           
+       } catch (error) {
+         res.status(400).json({"status":"400","mensagem":"não foi possível criar o contato"});
+       }
+        
+
+});
+
+
+//retornar contato especifico
+app.get('/api/contacts/:contact_name', function(req,res){
+  
+    try {
+
+    var token = req.body.token || req.query.token || req.headers['x-acess-token'];        
+    var payload = jwt.verify(token,'secretKey');
+    var nomeContato = req.params.contact_name;
+    var params = [payload,nomeContato];
+
+    var query = "SELECT * FROM trab_spd.contacts WHERE user_login = ? AND cont_name = ?";
+   
+        client.execute(query,params,function(err, result){
+            var contato = result.rows[0];
+            
+             if(!contato){
+                res.status(401).json({"status":"401","mensagem":"contato não encontrado"});
+             }else{
+                res.status(200).json({
+                    nome_contato: contato.cont_name,
+                    tel_contato: contato.cont_tel
+                });               
+             }
+
+        });    
+    } catch (error) {
+        res.status(401).json({"msg":"erro"});
+    }   
 
 
 });
@@ -98,7 +207,7 @@ app.get('/api/contacts/:username', function(req,res){
 
 });
 
-
+/*
 //novo contato
 app.post("/api/contacts", function(req, res){
 
@@ -115,7 +224,7 @@ app.post("/api/contacts", function(req, res){
 
     });
 
-});
+});*/
 
 //apagar contato
 //so vai apagar se sql for com a primary key
