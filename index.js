@@ -170,7 +170,7 @@ app.post('/api/contacts',function(req,res){
 });
 
 
-//retornar contato especifico
+//retornar contato especifico- melhor criar campo id text
 app.get('/api/contacts/:contact_name', function(req,res){
   
     try {
@@ -203,34 +203,39 @@ app.get('/api/contacts/:contact_name', function(req,res){
 });
 
 //listar todos contatos do logado
-app.get('/api/contacts/:username', function(req,res){
-
+app.get('/api/contacts', function(req,res){
+    try {
+        
+            var token = req.body.token || req.query.token || req.headers['x-acess-token'];        
+            var payload = jwt.verify(token,'secretKey');
+            var params = [payload];
+        
+            var query = "SELECT * FROM trab_spd.contacts WHERE user_login = ?";
+           
+                client.execute(query,params,function(err, result){
+                    var contatos = result.rows;
+                    
+                     if(!contatos){
+                        res.status(401).json({"status":"401","mensagem":"não existem contatos para este usuário"});
+                     }else{
+                        res.status(200).json({
+                            contatos
+                        });               
+                     }
+        
+                });    
+            } catch (error) {
+                res.status(401).json({"msg":"erro"});
+            }   
 });
 
-/*
-//novo contato
-app.post("/api/contacts", function(req, res){
-
-    var q = "INSERT INTO trab_spd.contatos(num,nome,tel) VALUES(?,?,?)";
-
-    var params = [req.body.num,req.body.nome,req.body.tel]; 
-
-    client.execute(q,params,{prepare:true}, function(err, result){
-        if(err){
-            res.status(404).send({"msg":"erro"});
-        }
-
-        res.status(201).json({"msg":"criado com sucesso"});
-
-    });
-
-});*/
 
 //apagar contato
 //so vai apagar se sql for com a primary key
-app.delete("/contacts/:cont_name", function(req, res){
+/*
+app.delete("/api/contacts/:contact_name", function(req, res){
     try {
-    var q = "DELETE FROM contatos WHERE num = ?"; 
+    var q = "DELETE FROM trab_spd.contacts WHERE num = ?"; 
     var n = parseInt(req.params.num);
    
         
@@ -247,7 +252,7 @@ app.delete("/contacts/:cont_name", function(req, res){
   }
 
 });
-
+*/
 
 
 
