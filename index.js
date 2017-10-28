@@ -1,11 +1,19 @@
 var express = require('express');
 var cassandra = require('cassandra-driver');
 var bodyParser = require('body-parser');
- 
+var morgan = require('morgan'); 
+var jwt = require('jsonwebtoken');
 
 var app = express();
 
+
+//body-parser para receber req POST e enviar json
 app.use(bodyParser.urlencoded({ extended:true }));
+app.use(bodyParser.json());
+
+//morgan para ver logs de requisicao
+app.use(morgan('dev'));
+
 
 var client = new cassandra.Client({contactPoints:['127.0.0.1'], keyspace:'trab_spd'});
 
@@ -17,31 +25,51 @@ client.connect(function(err, result){
 
 
 app.get('/', function(req, res){
-    res.json({"mensagem":"Welcome to the API!"});
+    res.json({"mensagem":"Bem vindo à API!"});
 });
 
 
-app.post('/register', function(req, res){
+
+app.post('/api/register', function(req, res){
     try {
-      var userLogin = req.body.login;
-      var userPass = req.body.password;
-      var params = [userLogin,userPass];
+      var login = req.body.login;
+      var senha = req.body.password;
+      var params = [login,senha];
+      var usuario = {login,senha};
+
+      
+
+      var query = "INSERT INTO trab_spd.users(user_login,user_pass) VALUES (?,?)";
         //inserir no banco e retornar 201 se OK   
-    } catch (error) {
-        
+      client.execute(query,params,{prepare:true},function(err,result){       
+
+            res.status(201).json({usuario});
+      });  
+
+    } catch (err) {
+        res.status(400).json({"mensagem":"não foi possível criar o usuário"});
     }
 });
 
-app.post('/login', function(req, res){
+//se login correto, retorna 200 OK e um token de acesso pra armazenar no local storage, 
+//nesse token jwt botar no payload apenas o login, q 
+
+app.post('/api/login', function(req, res){
 //criar index para password no cassa
-var userLogin = req.body.login;
-var userPass = req.body.password;
-var params = [userLogin,userPass]; 
+    var userLogin = req.body.login;
+    var userPass = req.body.password;
+    var params = [userLogin,userPass]; 
+
+    try {
+        
+    } catch (error) {
+        
+    }
 
 });
 
-
-app.get("/contato/:nome", function(req,res){
+//pegaR contato especifio
+app.get('/api/contacts/:cont_name', function(req,res){
     
     var q = "SELECT * FROM trab_spd.contatos WHERE nome = ?";
    
@@ -65,8 +93,14 @@ app.get("/contato/:nome", function(req,res){
 
 });
 
+//listar todos contatos do logado
+app.get('/api/contacts/:username', function(req,res){
 
-app.post("/contato", function(req, res){
+});
+
+
+//novo contato
+app.post("/api/contacts", function(req, res){
 
     var q = "INSERT INTO trab_spd.contatos(num,nome,tel) VALUES(?,?,?)";
 
@@ -83,8 +117,9 @@ app.post("/contato", function(req, res){
 
 });
 
+//apagar contato
 //so vai apagar se sql for com a primary key
-app.delete("/contato/:num", function(req, res){
+app.delete("/contacts/:cont_name", function(req, res){
     try {
     var q = "DELETE FROM contatos WHERE num = ?"; 
     var n = parseInt(req.params.num);
