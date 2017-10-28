@@ -14,11 +14,38 @@ client.connect(function(err, result){
     console.log("cassandra connected");
 });
 
-app.get("/contato", function(req,res){
+
+
+app.get('/', function(req, res){
+    res.json({"mensagem":"Welcome to the API!"});
+});
+
+
+app.post('/register', function(req, res){
+    try {
+      var userLogin = req.body.login;
+      var userPass = req.body.password;
+      var params = [userLogin,userPass];
+        //inserir no banco e retornar 201 se OK   
+    } catch (error) {
+        
+    }
+});
+
+app.post('/login', function(req, res){
+//criar index para password no cassa
+var userLogin = req.body.login;
+var userPass = req.body.password;
+var params = [userLogin,userPass]; 
+
+});
+
+
+app.get("/contato/:nome", function(req,res){
     
     var q = "SELECT * FROM trab_spd.contatos WHERE nome = ?";
    
-    client.execute(q,[req.query.nome], function(err, result){
+    client.execute(q,[req.params.nome], function(err, result){
         if(err){
             res.status(401).send({"msdg":"erro"});
         }
@@ -34,11 +61,6 @@ app.get("/contato", function(req,res){
        
 
     });
-
-   
-
-
-
 
 
 });
@@ -60,6 +82,30 @@ app.post("/contato", function(req, res){
     });
 
 });
+
+//so vai apagar se sql for com a primary key
+app.delete("/contato/:num", function(req, res){
+    try {
+    var q = "DELETE FROM contatos WHERE num = ?"; 
+    var n = parseInt(req.params.num);
+   
+        
+     client.execute(q,[parseInt(n)],function(err,result){
+
+     
+        res.status(200).send({"mensagem":"deletado com sucesso"});  
+  
+       
+  
+    });
+} catch (error) {
+    res.status(401).send({"msdg":"erro"});
+  }
+
+});
+
+
+
 
 
 app.listen(3000, function(){
