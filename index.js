@@ -42,7 +42,10 @@ app.post('/api/register', function(req, res){
         //inserir no banco e retornar 201 se OK   
       client.execute(query,params,{prepare:true},function(err,result){       
 
-            res.status(201).json({usuario});
+            res.status(201).json({
+                status:"201",    
+                usuario
+            });
       });  
 
     } catch (err) {
@@ -186,7 +189,7 @@ app.get('/api/contacts/:contact_name', function(req,res){
             var contato = result.rows[0];
             
              if(!contato){
-                res.status(401).json({"status":"401","mensagem":"contato não encontrado"});
+                res.status(401).json({"status":"400","mensagem":"contato não encontrado"});
              }else{
                 res.status(200).json({
                     nome_contato: contato.cont_name,
@@ -196,7 +199,7 @@ app.get('/api/contacts/:contact_name', function(req,res){
 
         });    
     } catch (error) {
-        res.status(401).json({"msg":"erro"});
+        res.status(400).json({"status":"400","mensagem":"não foi possível encontrar o contato"});
     }   
 
 
@@ -216,7 +219,7 @@ app.get('/api/contacts', function(req,res){
                     var contatos = result.rows;
                     
                      if(!contatos){
-                        res.status(401).json({"status":"401","mensagem":"não existem contatos para este usuário"});
+                        res.status(401).json({"status":"400","mensagem":"não existem contatos para este usuário"});
                      }else{
                         res.status(200).json({
                             contatos
@@ -225,36 +228,40 @@ app.get('/api/contacts', function(req,res){
         
                 });    
             } catch (error) {
-                res.status(401).json({"msg":"erro"});
+                res.status(400).json({"status":"400","mensagem":"não foi possível encontrar os contatos"});
             }   
 });
 
 
 //apagar contato
 //so vai apagar se sql for com a primary key
-/*
 app.delete("/api/contacts/:contact_name", function(req, res){
     try {
-    var q = "DELETE FROM trab_spd.contacts WHERE num = ?"; 
-    var n = parseInt(req.params.num);
-   
-        
-     client.execute(q,[parseInt(n)],function(err,result){
+      
+    var token = req.body.token || req.query.token || req.headers['x-acess-token'];        
+    var payload = jwt.verify(token,'secretKey');
+    var nomeContato = req.params.contact_name;
+    var params = [payload,nomeContato];
 
-     
-        res.status(200).send({"mensagem":"deletado com sucesso"});  
-  
-       
+    var query = "DELETE FROM trab_spd.contacts WHERE user_login = ? AND cont_name = ?";
+             
+    client.execute(query,params,function(err,result){
+
+        if(!nomeContato){
+            res.status(401).json({"status":"401","mensagem":"contato não encontrado"});
+         }else{
+            res.status(200).json({
+                status: "200",
+                mensagem: "contato deletado com sucesso"
+            });               
+         }      
   
     });
 } catch (error) {
-    res.status(401).send({"msdg":"erro"});
+    res.status(400).json({"status":"400","mensagem":"não foi possível deletar o contato"});
   }
 
 });
-*/
-
-
 
 
 app.listen(3000, function(){
