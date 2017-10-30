@@ -4,6 +4,8 @@ var bodyParser = require('body-parser');
 var morgan = require('morgan'); 
 var jwt = require('jsonwebtoken');
 
+var crypto = require('crypto');
+
 var app = express();
 
 
@@ -32,24 +34,41 @@ app.get('/', function(req, res){
 
 //falta apenas verificacao se login e senha estao preenchidos e criptografia de senha 
 app.post('/api/register', function(req, res){
+    var login = req.body.login;
+    var senha = req.body.password;  
+    
     try {
       var login = req.body.login;
-      var senha = req.body.password;
-      var params = [login,senha];
-      var usuario = {login,senha};   
+      var senha = req.body.password;       
 
-      var query = "INSERT INTO trab_spd.users(user_login,user_pass) VALUES (?,?)";
+      if((!login) || (!senha)){
+        res.status(400).json({
+            status:"400",    
+            mensagem:"informe login e senha para se cadastrar"
+        });
+    
+      } else{
+        //criptografia para senha
+        var mykey = crypto.createCipher('aes-256-ctr','pass-crypto');        
+        var senhaHash = mykey.update(senha,'utf8','hex');
+        senhaHash += mykey.final('hex');
+
+        var params = [login,senhaHash];
+        var usuario = {login,senhaHash}; 
+        var query = "INSERT INTO trab_spd.users(user_login,user_pass) VALUES (?,?)";
         //inserir no banco e retornar 201 se OK   
-      client.execute(query,params,{prepare:true},function(err,result){       
+         client.execute(query,params,{prepare:true},function(err,result){       
 
             res.status(201).json({
                 status:"201",    
-                usuario
+                login:usuario.login 
             });
-      });  
+         });  
+
+      } 
 
     } catch (err) {
-        res.status(400).json({"status":"400","mensagem":"não foi possível criar o usuário"});
+        res.status(400).json({status:"400",mensagem:"não foi possível criar o usuário"});
     }
 });
 
@@ -62,6 +81,11 @@ app.post('/api/login', function(req, res){
     try {
         var login = req.body.login;
         var senha = req.body.password;
+
+        //criptografia para senha
+        var mykey = crypto.createCipher('aes-256-ctr','pass-crypto');        
+        var senhaHash = mykey.update(senha,'utf8','hex');
+        senhaHash += mykey.final('hex'); 
         
         var query = "SELECT * FROM trab_spd.users WHERE user_login = ? LIMIT 1";
 
@@ -70,11 +94,11 @@ app.post('/api/login', function(req, res){
 
             //verficar se senha enviada bate com cadastro
             if(!user){
-                res.status(401).json({"status":"401","mensagem":"usuário não encontrado"});
+                res.status(401).json({status:"401",mensagem:"usuário não encontrado"});
             }else if(user.user_login !== login){
-                res.status(401).json({"status":"401","mensagem":"login do usuário inválido"}); //nao precisa desse if
-            } else if(user.user_pass !== senha){
-                res.status(401).json({"status":"401","mensagem":"senha do usuário inválida"}); 
+                res.status(401).json({status:"401",mensagem:"login do usuário inválido"}); //nao precisa desse if
+            } else if(user.user_pass !== senhaHash){
+                res.status(401).json({status:"401",mensagem:"senha do usuário inválida"}); 
             }else{
                 //usario e senha estiverem OK, criar token
                                     
@@ -94,7 +118,7 @@ app.post('/api/login', function(req, res){
 
              
     } catch (err) {
-        res.status(401).json({"status":"401","mensagem":"credenciais inválidas"});
+        res.status(401).json({status:"401",mensagem:"credenciais inválidas"});
     }
 
 });
@@ -147,26 +171,36 @@ app.post('/api/contacts',function(req,res){
         var nomeContato = req.body.nome_contato;
         var telContato = req.body.tel_contato;
 
-        var query = "INSERT INTO trab_spd.contacts(user_login,cont_name,cont_tel) VALUES(?,?,?)";
-       
-        var params = [payload,nomeContato,telContato];
-      
-        client.execute(query,params,{prepare:true}, function(err, result){
-          
-            //fazer verificações de campos vazios
-            res.status(201).json({
-                status:"201",
-                mensagem:"contato criado com sucesso!",
-                usuario:payload,
-                contato:nomeContato,
-                telefone:telContato
-
+        if((!nomeContato)){
+            res.status(400).json({
+                status:"400",    
+                mensagem:"informe o nome do contato"
             });
+        
+        } else{
+
+             var query = "INSERT INTO trab_spd.contacts(user_login,cont_name,cont_tel) VALUES(?,?,?)";
+       
+             var params = [payload,nomeContato,telContato];
+      
+             client.execute(query,params,{prepare:true}, function(err, result){
+          
+                  //fazer verificações de campos vazios
+                    res.status(201).json({
+                       status:"201",
+                       mensagem:"contato criado com sucesso!",
+                       usuario:payload,
+                      contato:nomeContato,
+                     telefone:telContato
+
+                  });
     
-        });
+             });
+
+         }
            
        } catch (error) {
-         res.status(400).json({"status":"400","mensagem":"não foi possível criar o contato"});
+         res.status(400).json({status:"400",mensagem:"não foi possível criar o contato"});
        }
         
 
@@ -189,7 +223,7 @@ app.get('/api/contacts/:contact_name', function(req,res){
             var contato = result.rows[0];
             
              if(!contato){
-                res.status(401).json({"status":"400","mensagem":"contato não encontrado"});
+                res.status(401).json({status:"400",mensagem:"contato não encontrado"});
              }else{
                 res.status(200).json({
                     nome_contato: contato.cont_name,
@@ -199,7 +233,7 @@ app.get('/api/contacts/:contact_name', function(req,res){
 
         });    
     } catch (error) {
-        res.status(400).json({"status":"400","mensagem":"não foi possível encontrar o contato"});
+        res.status(400).json({status:"400",mensagem:"não foi possível encontrar o contato"});
     }   
 
 
@@ -219,7 +253,7 @@ app.get('/api/contacts', function(req,res){
                     var contatos = result.rows;
                     
                      if(!contatos){
-                        res.status(401).json({"status":"400","mensagem":"não existem contatos para este usuário"});
+                        res.status(401).json({status:"400",mensagem:"não existem contatos para este usuário"});
                      }else{
                         res.status(200).json({
                             contatos
@@ -228,7 +262,7 @@ app.get('/api/contacts', function(req,res){
         
                 });    
             } catch (error) {
-                res.status(400).json({"status":"400","mensagem":"não foi possível encontrar os contatos"});
+                res.status(400).json({status:"400",mensagem:"não foi possível encontrar os contatos"});
             }   
 });
 
@@ -248,7 +282,7 @@ app.delete("/api/contacts/:contact_name", function(req, res){
     client.execute(query,params,function(err,result){
 
         if(!nomeContato){
-            res.status(401).json({"status":"401","mensagem":"contato não encontrado"});
+            res.status(401).json({status:"401",mensagem:"contato não encontrado"});
          }else{
             res.status(200).json({
                 status: "200",
@@ -258,10 +292,11 @@ app.delete("/api/contacts/:contact_name", function(req, res){
   
     });
 } catch (error) {
-    res.status(400).json({"status":"400","mensagem":"não foi possível deletar o contato"});
+    res.status(400).json({status:"400",mensagem:"não foi possível deletar o contato"});
   }
 
 });
+
 
 
 app.listen(3000, function(){
