@@ -256,6 +256,7 @@ app.get('/api/contacts', function(req,res){
                         res.status(401).json({status:"400",mensagem:"não existem contatos para este usuário"});
                      }else{
                         res.status(200).json({
+                            status:"200",
                             contatos
                         });               
                      }
