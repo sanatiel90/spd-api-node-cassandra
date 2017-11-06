@@ -1,0 +1,294 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+	<meta charset="utf-8">
+	<title>Página Inicial</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+</head>
+<body>
+	<header> 
+		<h1 class="text-center">Rotas API</h1> 
+	</header>
+
+
+  <main>
+    
+
+ <table class="table" >
+   <tr >
+     <td >VERBO</td>
+     <td>URI</td>
+     <td>Descrição</td>
+     <td>Parâmetros</td>
+     <td>Retorna se OK</td>
+     <td>Retorna se ERRO</td>
+   </tr>
+
+   <tr>
+     <td><button class="btn btn-success">GET</button> </td>
+     <td>http://localhost:3000/</td>
+     <td>Rota com mensagem de boas vindas</td>
+     <td> - </td>
+     <td><span style="color:green"> {
+    "mensagem": "Bem vindo à API!"
+} </span></td>
+     <td> - </td>
+   </tr>
+
+   <tr>
+     <td><button class="btn btn-primary">POST</button> </td>
+     <td>http://localhost:3000/api/register</td>
+     <td>Cadastra novo usuário</td>
+     <td><strong>login</strong>: o username do usuário <br> <strong>password</strong>: senha do usuário  </td>
+     
+     <td>
+     <span style="color:green"> 
+      {
+        "status": "201",
+        "mensagem": "cadastrado com sucesso",
+        "login": "rodrigo" 
+       }
+     </span>
+     </td>
+
+     <td>
+     <span style="color:red">
+      {
+        "status": "400",
+        "mensagem": "informe login e senha para se cadastrar"
+      },
+      <br>
+      {
+        "status": "400",
+        "mensagem": "não foi possível criar o usuário"
+      }
+     </span>
+     </td> 
+       
+   </tr>
+
+ <tr>
+     <td><button class="btn btn-primary">POST</button> </td>
+     <td>http://localhost:3000/api/login</td>
+     <td>Loga usuário no sistema</td>
+     <td><strong>login</strong>: o username do usuário <br> <strong>password</strong>: senha do usuário  </td>
+     
+     <td>
+     <span style="color:green"> 
+      {
+    "status": "200",
+    "mensagem": "autenticado com sucesso!",
+    "usuario": "rodrigo",
+    "token": "eyJhbGciOlMkZCnxCUmMh8HOPDVYk"
+}
+
+     </span>
+     <br>
+  OBS: O token de acesso deve então ser armazenado pela aplicação que está consumindo a API e enviado em cada nova requisição que for feita à API. O armazenamento pode ser feito por exemplo usando Cookies, LocalStorage ou Sessão. O envio do token pode ser feito no BODY da requisição ou na querystring da URL.
+     </td>
+
+     <td>
+     <span style="color:red">
+     {
+    "status": "401",
+    "mensagem": "credenciais inválidas"
+},
+
+<br>
+  {
+    "status": "400",
+    "mensagem": "falha ao autenticar token"
+},
+<br>
+{
+    "status": "403",
+    "mensagem": "token de acesso não informado"
+}
+     </span>
+     </td> 
+       
+   </tr>
+
+
+ <tr>
+     <td><button class="btn btn-primary">POST</button> </td>
+     <td>http://localhost:3000/api/contacts</td>
+     <td>Cadastra um novo contato para o usuário</td>
+     <td><strong>nome_contato</strong>: nome do contato <br> <strong>tel_contato</strong>: telefone do contato <br> <strong>token</strong>: o token de acesso gerado no login </td>
+     
+     <td>
+     <span style="color:green"> 
+     
+{
+    "status": "201",
+    "mensagem": "contato criado com sucesso!",
+    "usuario": "rodrigo",
+    "contato": "joao",
+    "telefone": "998984541"
+}
+     </span>
+     
+     </td>
+
+     <td>
+     <span style="color:red">
+     {
+    "status": "400",
+    "mensagem": "falha ao autenticar token"
+}, <br>
+
+{
+    "status": "400",
+    "mensagem": "informe o nome do contato"
+}
+     </span>
+     </td> 
+       
+   </tr>
+
+ <tr>
+     <td><button class="btn btn-success">GET</button> </td>
+     <td>http://localhost:3000/api/contacts</td>
+     <td>Lista todos contatos do usuário</td>
+     <td> <strong>token</strong>: o token de acesso gerado no login <br> <i>Exemplo de uso</i>: http://localhost:3000/api/contacts?token=eyJhbGciOlMkZCnxCUmMh8HOPDVYk </td>
+     
+     <td>
+     <span style="color:green"> 
+     
+{
+    "status": "200",
+    "contatos": [
+        {
+            "user_login": "rodrigo",
+            "cont_name": "joao",
+            "cont_tel": "998984541"
+        },
+        {
+            "user_login": "rodrigo",
+            "cont_name": "maria",
+            "cont_tel": "985411472"
+        },
+        {
+            "user_login": "rodrigo",
+            "cont_name": "ramon",
+            "cont_tel": "998410147"
+        }
+    ]
+}
+     </span>
+     
+     </td>
+
+     <td>
+     <span style="color:red">
+     {
+    "status": "400",
+    "mensagem": "falha ao autenticar token"
+}, <br>
+
+{
+    "status": "400",
+    "mensagem": "não existem contatos para este usuário"
+},<br>
+
+{
+    "status": "400",
+    "mensagem": "não foi possível encontrar os contatos"
+}
+     </span>
+     </td> 
+       
+   </tr>
+
+ <tr>
+     <td><button class="btn btn-success">GET</button> </td>
+     <td>http://localhost:3000/api/contacts/nome_contato</td>
+     <td>Retorna um contato com base no nome informado na URI</td>
+     <td> <strong>nome_contato</strong>: O nome do contato desejado, informado na URI <br> <strong>token</strong>: o token de acesso gerado no login <br> <i>Exemplo de uso</i>: http://localhost:3000/api/contacts/maria?token=eyJhbGciOlMkZCnxCUmMh8HOPDVYk </td>
+     
+     <td>
+     <span style="color:green"> 
+     
+{
+    "status": "200",
+    "nome_contato": "maria",
+    "tel_contato": "985411472"
+}
+     </span>
+     
+     </td>
+
+     <td>
+     <span style="color:red">
+     {
+    "status": "400",
+    "mensagem": "falha ao autenticar token"
+}, <br>
+
+{
+    "status": "400",
+    "mensagem": "contato não encontrado"
+},<br>
+
+{
+    "status": "400",
+    "mensagem": "não foi possível encontrar o contato"
+}
+     </span>
+     </td> 
+       
+   </tr>
+
+
+<tr>
+     <td><button class="btn btn-danger">DELETE</button> </td>
+     <td>http://localhost:3000/api/contacts/nome_contato</td>
+     <td>Deleta o contato informado na URI</td>
+     <td> <strong>nome_contato</strong>: O nome do contato a ser deletado<br> <strong>token</strong>: o token de acesso gerado no login <br> <i>Exemplo de uso</i>: http://localhost:3000/api/contacts/maria?token=eyJhbGciOlMkZCnxCUmMh8HOPDVYk </td>
+     
+     <td>
+     <span style="color:green"> 
+     
+{
+    "status": "200",
+    "mensagem": "contato deletado com sucesso"
+}
+     </span>
+     
+     </td>
+
+     <td>
+     <span style="color:red">
+     {
+    "status": "400",
+    "mensagem": "falha ao autenticar token"
+}, <br>
+
+{
+    "status": "401",
+    "mensagem": "contato não encontrado"
+},<br>
+
+{
+    "status": "400",
+    "mensagem": "não foi possível deletar o contato"
+}
+     </span>
+     </td> 
+       
+   </tr>
+
+
+ </table>
+
+
+ </main>
+	
+	<footer>
+    
+		<h4 class="text-center">API SPD</h4>
+	</footer>
+	
+
+</body>
+</html>

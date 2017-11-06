@@ -31,7 +31,6 @@ app.get('/', function(req, res){
     res.json({"mensagem":"Bem vindo à API!"});
 });
 
-
 //rota para registrar novo usuário
 app.post('/api/register', function(req, res){
     var login = req.body.login;
@@ -69,7 +68,7 @@ app.post('/api/register', function(req, res){
       } 
 
     } catch (err) {
-        res.status(400).json({status:"400",mensagem:"não foi possível criar o usuário"});
+        res.status(400).json({status:"400",mensagem:"   "});
     }
 });
 
